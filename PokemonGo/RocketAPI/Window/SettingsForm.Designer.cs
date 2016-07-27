@@ -210,6 +210,8 @@
             "cp",
             "leaveStrongest",
             "duplicate",
+            "iv",
+            "ivcp",
             "all"});
             this.transferTypeCb.Location = new System.Drawing.Point(113, 196);
             this.transferTypeCb.Name = "transferTypeCb";

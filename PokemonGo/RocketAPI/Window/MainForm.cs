@@ -199,10 +199,7 @@ namespace PokemonGo.RocketAPI.Window
                 // Write the players ingame details
                 ColoredConsoleWrite(Color.Yellow, "----------------------------");
                 if (ClientSettings.AuthType == AuthType.Ptc)
-                {
-                    ColoredConsoleWrite(Color.Cyan, "Account: " + ClientSettings.PtcUsername);
-                    ColoredConsoleWrite(Color.Cyan, "Password: " + ClientSettings.PtcPassword + "\n");
-                }
+                    ColoredConsoleWrite(Color.Cyan, "Account: " + ClientSettings.PtcUsername + "\n");
                 ColoredConsoleWrite(Color.DarkGray, "Name: " + profile.Profile.Username);
                 ColoredConsoleWrite(Color.DarkGray, "Team: " + profile.Profile.Team);
                 if (profile.Profile.Currency.ToArray()[0].Amount > 0) // If player has any pokecoins it will show how many they have.
@@ -239,6 +236,9 @@ namespace PokemonGo.RocketAPI.Window
                         break;
                     case "iv":
                         await TransferAllGivenPokemons(client, pokemons, ClientSettings.TransferIVThreshold);
+                        break;
+                    case "ivcp":
+                        await TransferAllGivenPokemons(client, pokemons, ClientSettings.TransferIVThreshold, ClientSettings.TransferCPThreshold);
                         break;
                     default:
                         ColoredConsoleWrite(Color.DarkGray, "Transfering pokemon disabled");
@@ -342,7 +342,7 @@ namespace PokemonGo.RocketAPI.Window
 
                 if (caughtPokemonResponse.Status == CatchPokemonResponse.Types.CatchStatus.CatchSuccess)
                 {
-                    ColoredConsoleWrite(Color.Green, $"We caught a {pokemonName} with {pokemonCP} CP and {pokemonIV}% IV");
+                    ColoredConsoleWrite(Color.Cyan, $"We caught a {pokemonName} with {pokemonCP} CP and {pokemonIV}% IV");
                     foreach (int xp in caughtPokemonResponse.Scores.Xp)
                         TotalExperience += xp;
                     TotalPokemon += 1;
@@ -389,7 +389,7 @@ namespace PokemonGo.RocketAPI.Window
                     PokeStopOutput.Write($", Eggs: {fortSearch.PokemonDataEgg}");
                 if (GetFriendlyItemsString(fortSearch.ItemsAwarded) != string.Empty)
                     PokeStopOutput.Write($", Items: {GetFriendlyItemsString(fortSearch.ItemsAwarded)} ");
-                ColoredConsoleWrite(Color.Cyan, PokeStopOutput.ToString());
+                ColoredConsoleWrite(Color.Green, PokeStopOutput.ToString());
 
                 if (fortSearch.ExperienceAwarded != 0)
                     TotalExperience += (fortSearch.ExperienceAwarded);
@@ -475,12 +475,14 @@ namespace PokemonGo.RocketAPI.Window
             return ((float)(poke.IndividualAttack + poke.IndividualDefense + poke.IndividualStamina) / (3.0f * 15.0f)) * 100.0f;
         }
 
-        private async Task TransferAllGivenPokemons(Client client, IEnumerable<PokemonData> unwantedPokemons, float keepPerfectPokemonLimit = 80.0f)
+        private async Task TransferAllGivenPokemons(Client client, IEnumerable<PokemonData> unwantedPokemons, float keepPerfectPokemonLimit = 80.0f, int cpThreshold = 0)
         {
             foreach (var pokemon in unwantedPokemons)
             {
-                if (Perfect(pokemon) >= keepPerfectPokemonLimit) continue;
-                ColoredConsoleWrite(Color.White, $"Pokemon {pokemon.PokemonId} with {pokemon.Cp} CP has IV percent less than {keepPerfectPokemonLimit}%");
+                var pokemonIV = Perfect(pokemon);
+                var pokemonIDString = string.Format("Pokemon {0} with {1} CP and IV {2}%.", pokemon.PokemonId, pokemon.Cp, Math.Round(pokemonIV).ToString());
+
+                if (pokemonIV >= keepPerfectPokemonLimit && pokemon.Cp > cpThreshold) continue;
 
                 if (pokemon.Favorite == 0)
                 {
@@ -506,15 +508,16 @@ namespace PokemonGo.RocketAPI.Window
                     }
                     else
                         pokemonName = Convert.ToString(pokemon.PokemonId);
+
                     if (transferPokemonResponse.Status == 1)
                     {
-                        ColoredConsoleWrite(Color.Magenta, $"Transferred {pokemonName} with {pokemon.Cp} CP");
+                        ColoredConsoleWrite(Color.Magenta, "Transferred " + pokemonIDString);
                     }
                     else
                     {
                         var status = transferPokemonResponse.Status;
 
-                        ColoredConsoleWrite(Color.Red, $"Somehow failed to transfer {pokemonName} with {pokemon.Cp} CP. " +
+                        ColoredConsoleWrite(Color.Red, "Transfer failed for " + pokemonIDString +
                                                  $"ReleasePokemonOutProto.Status was {status}");
                     }
 
