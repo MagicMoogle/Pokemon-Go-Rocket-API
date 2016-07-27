@@ -289,6 +289,7 @@ namespace PokemonGo.RocketAPI.Console
                 var pokemonCP = encounterPokemonResponse?.WildPokemon?.PokemonData?.Cp;
                 var pokemonIV = Perfect(encounterPokemonResponse?.WildPokemon?.PokemonData);
                 CatchPokemonResponse caughtPokemonResponse;
+
                 do
                 {
                     if (ClientSettings.RazzBerryMode == "cp")
@@ -313,7 +314,7 @@ namespace PokemonGo.RocketAPI.Console
 
                 if (caughtPokemonResponse.Status == CatchPokemonResponse.Types.CatchStatus.CatchSuccess)
                 {
-                    ColoredConsoleWrite(ConsoleColor.Green, $"We caught a {pokemonName} with {pokemonCP} CP and {pokemonIV}% IV");
+                    ColoredConsoleWrite(ConsoleColor.Green, $"We caught a {pokemonName} with {pokemonCP} CP and {pokemonIV}% IV !!");
                     foreach (int xp in caughtPokemonResponse.Scores.Xp)
                         TotalExperience += xp;
                     TotalPokemon += 1;

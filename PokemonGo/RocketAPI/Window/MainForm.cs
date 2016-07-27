@@ -114,8 +114,24 @@ namespace PokemonGo.RocketAPI.Window
             statusLabel.Text = text;
         }
 
+        private IEnumerable<PokemonData> RestrictPokemonToTrashMob(IEnumerable<PokemonData> pokemon)
+        {
+            var trashPokemon = new List<PokemonId>()
+            {
+                PokemonId.Pidgey,
+                PokemonId.Rattata,
+                PokemonId.Weedle,
+                PokemonId.Zubat,
+                PokemonId.Caterpie
+            };
+
+            return pokemon.Where(p => trashPokemon.Contains(p.PokemonId));
+        }
+
         private async Task EvolveAllGivenPokemons(Client client, IEnumerable<PokemonData> pokemonToEvolve)
         {
+            //todo: sufficient candy check
+
             foreach (var pokemon in pokemonToEvolve)
             {
                 /*
@@ -158,7 +174,7 @@ namespace PokemonGo.RocketAPI.Window
                     }
                 } while (evolvePokemonOutProto.Result == 1);
                 if (countOfEvolvedUnits > 0)
-                    ColoredConsoleWrite(Color.Cyan,
+                    ColoredConsoleWrite(Color.Yellow,
                         $"Evolved {countOfEvolvedUnits} pieces of {pokemon.PokemonId} for {xpCount}xp");
 
                 await Task.Delay(3000);
@@ -219,6 +235,10 @@ namespace PokemonGo.RocketAPI.Window
 
                 ColoredConsoleWrite(Color.Yellow, "----------------------------");
 
+                // Evolve pokemon before transferring.
+                if (ClientSettings.EvolveAllGivenPokemons)
+                    await EvolveAllGivenPokemons(client, pokemons);
+
                 // I believe a switch is more efficient and easier to read.
                 switch (ClientSettings.TransferType)
                 {
@@ -245,8 +265,6 @@ namespace PokemonGo.RocketAPI.Window
                         break;
                 }
 
-                if (ClientSettings.EvolveAllGivenPokemons)
-                    await EvolveAllGivenPokemons(client, pokemons);
                 if (ClientSettings.Recycler)
                     client.RecycleItems(client);
 

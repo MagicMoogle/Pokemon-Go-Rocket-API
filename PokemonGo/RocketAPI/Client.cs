@@ -183,44 +183,22 @@ namespace PokemonGo.RocketAPI
                 DefaultIfEmpty(new { ItemId = MiscEnums.Item.ITEM_MASTER_BALL, Amount = 0 }).FirstOrDefault().Amount;
 
             // Use better balls for high CP pokemon
-            if (masterBallsCount > 0 && pokemonCP >= 1000)
+            if (masterBallsCount > 0 && pokemonCP >= 1500)
             {
                 ColoredConsoleWrite(ConsoleColor.Green, $"Master Ball is being used");
                 return MiscEnums.Item.ITEM_MASTER_BALL;
             }
 
-            if (ultraBallsCount > 0 && pokemonCP >= 600)
+            if (ultraBallsCount > 0 && pokemonCP >= 900)
             {
                 ColoredConsoleWrite(ConsoleColor.Green, $"Ultra Ball is being used");
                 return MiscEnums.Item.ITEM_ULTRA_BALL;
             }
 
-            if (greatBallsCount > 0 && pokemonCP >= 350)
+            if (greatBallsCount > 0 && pokemonCP >= 500)
             {
                 ColoredConsoleWrite(ConsoleColor.Green, $"Great Ball is being used");
                 return MiscEnums.Item.ITEM_GREAT_BALL;
-            }
-
-            // If low CP pokemon, but no more pokeballs; only use better balls if pokemon are of semi-worthy quality
-            if (pokeBallsCount > 0)
-            {
-                ColoredConsoleWrite(ConsoleColor.Green, $"Poke Ball is being used");
-                return MiscEnums.Item.ITEM_POKE_BALL;
-            }
-            else if ((greatBallsCount < 40 && pokemonCP >= 200) || greatBallsCount >= 40)
-            {
-                ColoredConsoleWrite(ConsoleColor.Green, $"Great Ball is being used");
-                return MiscEnums.Item.ITEM_GREAT_BALL;
-            }
-            else if (ultraBallsCount > 0 && pokemonCP >= 500)
-            {
-                ColoredConsoleWrite(ConsoleColor.Green, $"Ultra Ball is being used");
-                return MiscEnums.Item.ITEM_ULTRA_BALL;
-            }
-            else if (masterBallsCount > 0 && pokemonCP >= 700)
-            {
-                ColoredConsoleWrite(ConsoleColor.Green, $"Master Ball is being used");
-                return MiscEnums.Item.ITEM_MASTER_BALL;
             }
 
             return MiscEnums.Item.ITEM_POKE_BALL;
@@ -441,7 +419,7 @@ namespace PokemonGo.RocketAPI
             foreach (var item in items)
             {
                 var transfer = await RecycleItem((AllEnum.ItemId)item.Item_, item.Count);
-                ColoredConsoleWrite(ConsoleColor.DarkCyan, $"Recycled {item.Count}x {((AllEnum.ItemId)item.Item_).ToString().Substring(4)}");
+                ColoredConsoleWrite(ConsoleColor.Magenta, $"Recycled {item.Count}x {((AllEnum.ItemId)item.Item_).ToString().Substring(4)}");
                 await Task.Delay(500);
             }
             await Task.Delay(_settings.RecycleItemsInterval * 1000);

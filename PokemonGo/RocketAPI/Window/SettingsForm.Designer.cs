@@ -55,8 +55,8 @@
             this.trackBar = new System.Windows.Forms.TrackBar();
             this.panel2 = new System.Windows.Forms.Panel();
             this.buttonFindAddress = new System.Windows.Forms.Button();
-            this.panel1 = new System.Windows.Forms.Panel();
             this.textBoxAddress = new PokemonGo.RocketAPI.Window.CueTextBox();
+            this.panel1 = new System.Windows.Forms.Panel();
             this.groupBox1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.trackBar)).BeginInit();
             this.panel2.SuspendLayout();
@@ -176,6 +176,7 @@
             // 
             this.ptcPassText.Location = new System.Drawing.Point(104, 59);
             this.ptcPassText.Name = "ptcPassText";
+            this.ptcPassText.PasswordChar = '*';
             this.ptcPassText.Size = new System.Drawing.Size(100, 20);
             this.ptcPassText.TabIndex = 12;
             // 
@@ -338,6 +339,17 @@
             this.buttonFindAddress.UseVisualStyleBackColor = true;
             this.buttonFindAddress.Click += new System.EventHandler(this.buttonFindAddress_Click);
             // 
+            // textBoxAddress
+            // 
+            this.textBoxAddress.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.textBoxAddress.Cue = "Address or latitude, longitude";
+            this.textBoxAddress.Location = new System.Drawing.Point(3, 6);
+            this.textBoxAddress.Name = "textBoxAddress";
+            this.textBoxAddress.Size = new System.Drawing.Size(372, 20);
+            this.textBoxAddress.TabIndex = 0;
+            this.textBoxAddress.Text = "Union Station, Chicago, IL";
+            // 
             // panel1
             // 
             this.panel1.Controls.Add(this.authTypeLabel);
@@ -367,17 +379,6 @@
             this.panel1.Name = "panel1";
             this.panel1.Size = new System.Drawing.Size(212, 413);
             this.panel1.TabIndex = 26;
-            // 
-            // textBoxAddress
-            // 
-            this.textBoxAddress.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.textBoxAddress.Cue = "Address or latitude, longitude";
-            this.textBoxAddress.Location = new System.Drawing.Point(3, 6);
-            this.textBoxAddress.Name = "textBoxAddress";
-            this.textBoxAddress.Size = new System.Drawing.Size(372, 20);
-            this.textBoxAddress.TabIndex = 0;
-            this.textBoxAddress.Text = "Union Station, Chicago, IL";
             // 
             // SettingsForm
             // 
