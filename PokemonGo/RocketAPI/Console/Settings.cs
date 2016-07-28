@@ -49,6 +49,8 @@ namespace PokemonGo.RocketAPI.Console
 
         public bool Recycler => GetSetting() != string.Empty ? System.Convert.ToBoolean(GetSetting(), CultureInfo.InvariantCulture) : false;
 
+        public bool KeepEvolveExpPokemon => GetSetting() != string.Empty ? System.Convert.ToBoolean(GetSetting(), CultureInfo.InvariantCulture) : false;
+
         ICollection<KeyValuePair<ItemId, int>> ISettings.ItemRecycleFilter
         {
             get

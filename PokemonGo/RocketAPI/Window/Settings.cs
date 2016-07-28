@@ -49,7 +49,7 @@ namespace PokemonGo.RocketAPI.Window
         public int TravelSpeed => GetSetting() != string.Empty ? int.Parse(GetSetting(), CultureInfo.InvariantCulture) : 60;
         public bool EvolveAllGivenPokemons => GetSetting() != string.Empty && Convert.ToBoolean(GetSetting(), CultureInfo.InvariantCulture);
         public bool CatchPokemon => GetSetting() != string.Empty && Convert.ToBoolean(GetSetting(), CultureInfo.InvariantCulture);
-
+        public bool KeepEvolveExpPokemon => GetSetting() != string.Empty && Convert.ToBoolean(GetSetting(), CultureInfo.InvariantCulture);
 
         public AuthType AuthType
         {
@@ -85,7 +85,7 @@ namespace PokemonGo.RocketAPI.Window
 
         ICollection<KeyValuePair<ItemId, int>> ISettings.ItemRecycleFilter => new[]
         {
-            new KeyValuePair<ItemId, int>(ItemId.ItemPokeBall, 30),
+            new KeyValuePair<ItemId, int>(ItemId.ItemPokeBall, 50),
             new KeyValuePair<ItemId, int>(ItemId.ItemGreatBall, 50),
             new KeyValuePair<ItemId, int>(ItemId.ItemUltraBall, 100),
             new KeyValuePair<ItemId, int>(ItemId.ItemMasterBall, 200),

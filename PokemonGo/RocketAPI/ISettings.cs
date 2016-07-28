@@ -30,5 +30,6 @@ namespace PokemonGo.RocketAPI
         string RazzBerryMode { get; }
         double RazzBerrySetting { get; }
         bool CatchPokemon { get; }
+        bool KeepEvolveExpPokemon { get; }
     }
 }

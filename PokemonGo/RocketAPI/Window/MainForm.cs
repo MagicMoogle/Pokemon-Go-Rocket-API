@@ -23,6 +23,15 @@ namespace PokemonGo.RocketAPI.Window
 {
     public partial class MainForm : Form
     {
+        private IList<PokemonId>  EvolveExpPokemon = new List<PokemonId>()
+        {
+            PokemonId.Pidgey,
+            PokemonId.Rattata,
+            PokemonId.Weedle,
+            PokemonId.Zubat,
+            PokemonId.Caterpie
+        };
+
         public MainForm()
         {
             InitializeComponent();
@@ -118,26 +127,22 @@ namespace PokemonGo.RocketAPI.Window
             statusLabel.Text = text;
         }
 
-        private IEnumerable<PokemonData> RestrictPokemonToTrashMob(IEnumerable<PokemonData> pokemon)
-        {
-            var trashPokemon = new List<PokemonId>()
-            {
-                PokemonId.Pidgey,
-                PokemonId.Rattata,
-                PokemonId.Weedle,
-                PokemonId.Zubat,
-                PokemonId.Caterpie
-            };
-
-            return pokemon.Where(p => trashPokemon.Contains(p.PokemonId));
-        }
-
         private async Task EvolvePokemons(Client client)
         {
             var inventory = await client.GetInventory();
             var pokemons =
                 inventory.InventoryDelta.InventoryItems.Select(i => i.InventoryItemData?.Pokemon)
                     .Where(p => p != null && p?.PokemonId > 0);
+
+            await EvolveAllGivenPokemons(client, pokemons);
+        }
+
+        private async Task EvolveExpPokemons(Client client)
+        {
+            var inventory = await client.GetInventory();
+            var pokemons =
+                inventory.InventoryDelta.InventoryItems.Select(i => i.InventoryItemData?.Pokemon)
+                    .Where(p => p != null && p?.PokemonId > 0 && this.EvolveExpPokemon.Contains(p.PokemonId));
 
             await EvolveAllGivenPokemons(client, pokemons);
         }
@@ -275,8 +280,11 @@ namespace PokemonGo.RocketAPI.Window
                     case "IV":
                         await TransferAllGivenPokemons(client, pokemons, ClientSettings.TransferIVThreshold);
                         break;
-                    case "ivcp":
-                        await TransferAllGivenPokemons(client, pokemons, ClientSettings.TransferIVThreshold, ClientSettings.TransferCPThreshold);
+                    case "IV and CP":
+                        await TransferAllGivenPokemons(client, pokemons, ClientSettings.TransferIVThreshold, ClientSettings.TransferCPThreshold, false, ClientSettings.KeepEvolveExpPokemon);
+                        break;
+                    case "IV xor CP":
+                        await TransferAllGivenPokemons(client, pokemons, ClientSettings.TransferIVThreshold, ClientSettings.TransferCPThreshold, true, ClientSettings.KeepEvolveExpPokemon);
                         break;
                     default:
                         ColoredConsoleWrite(Color.DarkGray, "Transfering pokemon disabled");
@@ -386,7 +394,7 @@ namespace PokemonGo.RocketAPI.Window
 
                 if (caughtPokemonResponse.Status == CatchPokemonResponse.Types.CatchStatus.CatchSuccess)
                 {
-                    ColoredConsoleWrite(Color.Cyan, $"We caught a {pokemonName} with {pokemonCP} CP and {pokemonIV}% IV");
+                    ColoredConsoleWrite(pokemonIV > 90 ? Color.Yellow : Color.Cyan, $"We caught a {pokemonName} with {pokemonCP} CP and {pokemonIV}% IV !!");
                     foreach (int xp in caughtPokemonResponse.Scores.Xp)
                         TotalExperience += xp;
                     TotalPokemon += 1;
@@ -415,6 +423,12 @@ namespace PokemonGo.RocketAPI.Window
                         break;
                     case "IV":
                         await TransferAllGivenPokemons(client, pokemons2, ClientSettings.TransferIVThreshold);
+                        break;
+                    case "IV and CP":
+                        await TransferAllGivenPokemons(client, pokemons2, ClientSettings.TransferIVThreshold, ClientSettings.TransferCPThreshold, false, ClientSettings.KeepEvolveExpPokemon);
+                        break;
+                    case "IV xor CP":
+                        await TransferAllGivenPokemons(client, pokemons2, ClientSettings.TransferIVThreshold, ClientSettings.TransferCPThreshold, true, ClientSettings.KeepEvolveExpPokemon);
                         break;
                     default:
                         ColoredConsoleWrite(Color.DarkGray, "Transfering pokemon disabled");
@@ -632,14 +646,21 @@ namespace PokemonGo.RocketAPI.Window
             return ((float)(poke.IndividualAttack + poke.IndividualDefense + poke.IndividualStamina) / (3.0f * 15.0f)) * 100.0f;
         }
 
-        private async Task TransferAllGivenPokemons(Client client, IEnumerable<PokemonData> unwantedPokemons, float keepPerfectPokemonLimit = 80.0f, int cpThreshold = 0)
+        private async Task TransferAllGivenPokemons(Client client, IEnumerable<PokemonData> unwantedPokemons, float keepPerfectPokemonLimit = 80.0f, int cpThreshold = 0, bool isXOR = false, bool keepEvolveExpPokemon = false)
         {
+            if (keepEvolveExpPokemon) unwantedPokemons = unwantedPokemons.Where(p => !EvolveExpPokemon.Contains(p.PokemonId));
+
             foreach (var pokemon in unwantedPokemons)
             {
                 var pokemonIV = Perfect(pokemon);
                 var pokemonIDString = string.Format("Pokemon {0} with {1} CP and IV {2}%.", pokemon.PokemonId, pokemon.Cp, Math.Round(pokemonIV).ToString());
 
-                if (pokemonIV >= keepPerfectPokemonLimit && pokemon.Cp > cpThreshold) continue;
+                if (isXOR)
+                    // Transfer if neither of IV or CP criterion is met.
+                    if (pokemonIV >= keepPerfectPokemonLimit || pokemon.Cp >= cpThreshold) continue;
+                else
+                    // Transfer if both IV and CP criterion is not met.
+                    if (pokemonIV >= keepPerfectPokemonLimit && pokemon.Cp >= cpThreshold) continue;
 
                 if (pokemon.Favorite == 0)
                 {
@@ -846,13 +867,18 @@ namespace PokemonGo.RocketAPI.Window
         public async Task ConsoleLevelTitle(string Username, Client client)
         {
             var inventory = await client.GetInventory();
+            var pokemons =
+                inventory.InventoryDelta.InventoryItems
+                .Select(i => i.InventoryItemData?.Pokemon)
+                    .Where(p => p != null && p?.PokemonId > 0)
+                    .Count();
             var stats = inventory.InventoryDelta.InventoryItems.Select(i => i.InventoryItemData?.PlayerStats).ToArray();
             var profile = await client.GetProfile();
             foreach (var v in stats)
                 if (v != null)
                 {
                     int XpDiff = GetXpDiff(client, v.Level);
-                    SetStatusText(string.Format(Username + " | Level: {0:0} - ({2:0} / {3:0}) | Runtime {1} | Stardust: {4:0}", v.Level, _getSessionRuntimeInTimeFormat(), (v.Experience - v.PrevLevelXp - XpDiff), (v.NextLevelXp - v.PrevLevelXp - XpDiff), profile.Profile.Currency.ToArray()[1].Amount) + " | XP/Hour: " + Math.Round(TotalExperience / GetRuntime()) + " | Pokemon/Hour: " + Math.Round(TotalPokemon / GetRuntime()));
+                    SetStatusText(string.Format("{1} | {5} LV{0:0} ({2:0}/{3:0}) | Stardust:{4:0}", v.Level, _getSessionRuntimeInTimeFormat(), (v.Experience - v.PrevLevelXp - XpDiff), (v.NextLevelXp - v.PrevLevelXp - XpDiff), profile.Profile.Currency.ToArray()[1].Amount, Username) + " | Pokemon:" + pokemons + "/" + profile.Profile.PokeStorage + " | XP/Hour: " + Math.Round(TotalExperience / GetRuntime()) + " | Pokemon/Hour: " + Math.Round(TotalPokemon / GetRuntime()));
                 }
             await Task.Delay(1000);
             ConsoleLevelTitle(Username, client);

@@ -228,7 +228,7 @@
             "CP",
             "IV",
             "IV and CP",
-			"IV or CP",
+            "IV xor CP",
             "Leave Strongest",
             "Duplicate",
             "IV Duplicate",
