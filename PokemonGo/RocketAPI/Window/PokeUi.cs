@@ -13,6 +13,7 @@ namespace PokemonGo.RocketAPI.Window
 {
     public partial class PokeUi : Form
     {
+        private static Client client;
         public PokeUi()
         {
             InitializeComponent();
@@ -29,10 +30,10 @@ namespace PokemonGo.RocketAPI.Window
         private async void Execute()
         {
             button1.Enabled = false;
+            button2.Enabled = false;
+            button3.Enabled = false;
 
-            var client = new Client(ClientSettings);
-
-
+            client = new Client(ClientSettings);
 
             try
             {
@@ -55,36 +56,42 @@ namespace PokemonGo.RocketAPI.Window
                         .OrderByDescending(key => key.Cp);
                 var families = inventory.InventoryDelta.InventoryItems
                     .Select(i => i.InventoryItemData?.PokemonFamily)
-                    .Where(p => p != null && (int) p?.FamilyId > 0)
+                    .Where(p => p != null && (int)p?.FamilyId > 0)
                     .OrderByDescending(p => (int)p.FamilyId);
-                    
-                    
-                
-                
+
+
+
+
                 var imageList = new ImageList { ImageSize = new Size(50, 50) };
                 listView1.ShowItemToolTips = true;
-                
 
                 foreach (var pokemon in pokemons)
                 {
-
-                    var pokemonImage = GetPokemonImage((int)pokemon.PokemonId);
-                    imageList.Images.Add(pokemon.PokemonId.ToString(),pokemonImage);
+                    Bitmap pokemonImage = null;
+                    await Task.Run(() =>
+                    {
+                        pokemonImage = GetPokemonImage((int)pokemon.PokemonId);
+                    });
+                    imageList.Images.Add(pokemon.PokemonId.ToString(), pokemonImage);
 
                     listView1.LargeImageList = imageList;
                     var listViewItem = new ListViewItem();
-                    listViewItem.SubItems.Add("Cp: " + pokemon.Cp);
+                    listViewItem.Tag = pokemon;
 
 
                     var currentCandy = families
-                        .Where(i => (int) i.FamilyId <= (int) pokemon.PokemonId)
-                        .Select(f=>f.Candy)
+                        .Where(i => (int)i.FamilyId <= (int)pokemon.PokemonId)
+                        .Select(f => f.Candy)
                         .First();
                     var currIv = Math.Round(Perfect(pokemon));
                     //listViewItem.SubItems.Add();
                     listViewItem.ImageKey = pokemon.PokemonId.ToString();
+
+                    var pokemonId2 = pokemon.PokemonId;
+                    var pokemonName = pokemon.Id;
+
                     listViewItem.Text = string.Format("{0}\n{1} CP", pokemon.PokemonId, pokemon.Cp);
-                    listViewItem.ToolTipText = currentCandy+" Candy\n"+currIv+"% IV";
+                    listViewItem.ToolTipText = currentCandy + " Candy\n" + currIv + "% IV";
 
 
                     this.listView1.Items.Add(listViewItem);
@@ -92,15 +99,19 @@ namespace PokemonGo.RocketAPI.Window
 
                 }
                 button1.Enabled = true;
+                button2.Enabled = true;
+                button3.Enabled = true;
 
             }
-            catch (TaskCanceledException){ Execute(); }
+            catch (TaskCanceledException) { Execute(); }
             catch (UriFormatException) { Execute(); }
-            catch (ArgumentOutOfRangeException) {  Execute(); }
+            catch (ArgumentOutOfRangeException) { Execute(); }
             catch (ArgumentNullException) { Execute(); }
             catch (NullReferenceException) { Execute(); }
-            catch (Exception ex) {  Execute(); }
+            catch (Exception ex) { Execute(); }
         }
+
+
         private static Bitmap GetPokemonImage(int pokemonId)
         {
             var Sprites = AppDomain.CurrentDomain.BaseDirectory + "Sprites\\";
@@ -126,13 +137,122 @@ namespace PokemonGo.RocketAPI.Window
 
         private void listView1_SelectedIndexChanged(object sender, EventArgs e)
         {
-            //if (listView1.SelectedItems.Count == 0) return;
-            //label1.Text = listView1.SelectedItems[0]?.SubItems[1].Text;
-            //label2.Text = listView1.SelectedItems[0]?.SubItems[2].Text;
+
         }
         public static float Perfect(PokemonData poke)
         {
             return ((float)(poke.IndividualAttack + poke.IndividualDefense + poke.IndividualStamina) / (3.0f * 15.0f)) * 100.0f;
+        }
+
+        private void listView1_MouseClick(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Right)
+            {
+                if (listView1.FocusedItem.Bounds.Contains(e.Location) == true)
+                {
+                    contextMenuStrip1.Show(Cursor.Position);
+                }
+            }
+        }
+
+        private async void toolStripMenuItem1_Click(object sender, EventArgs e)
+        {
+            var pokemon = (PokemonData)listView1.SelectedItems[0].Tag;
+
+
+            if (MessageBox.Show(this, pokemon.PokemonId + " with " + pokemon.Cp + " CP thats " + Math.Round(Perfect(pokemon)) + "% perfect", "Are you sure you want to transfer?", MessageBoxButtons.OKCancel) == DialogResult.OK)
+            {
+                var transfer = await client.TransferPokemon(pokemon.Id);
+            }
+            listView1.Items.Remove(listView1.SelectedItems[0]);
+        }
+
+        private async void button2_Click(object sender, EventArgs e)
+        {
+            var selectedItems = this.listView1.SelectedItems;
+
+            foreach (ListViewItem selectedItem in selectedItems)
+            {
+                await evolvePokemon((PokemonData)selectedItem.Tag);
+            }
+
+            this.listView1.Clear();
+            Execute();
+        }
+
+        private async void button3_Click(object sender, EventArgs e)
+        {
+            var selectedItems = this.listView1.SelectedItems;
+
+            foreach (ListViewItem selectedItem in selectedItems)
+            {
+                await transferPokemon((PokemonData)selectedItem.Tag);
+            }
+
+            this.listView1.Clear();
+            Execute();
+        }
+
+        private static async Task evolvePokemon(PokemonData pokemon)
+        {
+            try
+            {
+                var evolvePokemonResponse = await client.EvolvePokemon(pokemon.Id);
+                string message = "";
+                string caption = "";
+                MessageBoxButtons buttons = MessageBoxButtons.OK;
+                DialogResult result;
+
+                if (evolvePokemonResponse.Result == 1)
+                {
+                    message = $"{pokemon.PokemonId} successfully evolved into {evolvePokemonResponse.EvolvedPokemon.PokemonType}\n{evolvePokemonResponse.ExpAwarded} experience awarded\n{evolvePokemonResponse.CandyAwarded} candy awarded";
+                    caption = $"{pokemon.PokemonId} evolved into {evolvePokemonResponse.EvolvedPokemon.PokemonType}";
+                }
+                else
+                {
+                    message = $"{pokemon.PokemonId} could not be evolved";
+                    caption = $"Evolve {pokemon.PokemonId} failed";
+                }
+
+                result = MessageBox.Show(message, caption, buttons, MessageBoxIcon.Information);
+            }
+            catch (TaskCanceledException) { await evolvePokemon(pokemon); }
+            catch (UriFormatException) { await evolvePokemon(pokemon); }
+            catch (ArgumentOutOfRangeException) { await evolvePokemon(pokemon); }
+            catch (ArgumentNullException) { await evolvePokemon(pokemon); }
+            catch (NullReferenceException) { await evolvePokemon(pokemon); }
+            catch (Exception ex) { await evolvePokemon(pokemon); }
+        }
+
+        private static async Task transferPokemon(PokemonData pokemon)
+        {
+            try
+            {
+                var transferPokemonResponse = await client.TransferPokemon(pokemon.Id);
+                string message = "";
+                string caption = "";
+                MessageBoxButtons buttons = MessageBoxButtons.OK;
+                DialogResult result;
+
+                if (transferPokemonResponse.Status == 1)
+                {
+                    message = $"{pokemon.PokemonId} was transferred\n{transferPokemonResponse.CandyAwarded} candy awarded";
+                    caption = $"{pokemon.PokemonId} transferred";
+                }
+                else
+                {
+                    message = $"{pokemon.PokemonId} could not be transferred";
+                    caption = $"Transfer {pokemon.PokemonId} failed";
+                }
+
+                result = MessageBox.Show(message, caption, buttons, MessageBoxIcon.Information);
+            }
+            catch (TaskCanceledException) { await transferPokemon(pokemon); }
+            catch (UriFormatException) { await transferPokemon(pokemon); }
+            catch (ArgumentOutOfRangeException) { await transferPokemon(pokemon); }
+            catch (ArgumentNullException) { await transferPokemon(pokemon); }
+            catch (NullReferenceException) { await transferPokemon(pokemon); }
+            catch (Exception ex) { await transferPokemon(pokemon); }
         }
     }
 }
