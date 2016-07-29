@@ -350,13 +350,7 @@ namespace PokemonGo.RocketAPI.Window
         private async Task ExecuteCatchAllNearbyPokemons(Client client)
         {
             var mapObjects = await client.GetMapObjects();
-
             var pokemons = mapObjects.MapCells.SelectMany(i => i.CatchablePokemons);
-            var inventory2 = await client.GetInventory();
-            var pokemons2 = inventory2.InventoryDelta.InventoryItems
-                .Select(i => i.InventoryItemData?.Pokemon)
-                .Where(p => p != null && p?.PokemonId > 0)
-                .ToArray();
 
             foreach (var pokemon in pokemons)
             {
@@ -394,7 +388,7 @@ namespace PokemonGo.RocketAPI.Window
 
                 if (caughtPokemonResponse.Status == CatchPokemonResponse.Types.CatchStatus.CatchSuccess)
                 {
-                    ColoredConsoleWrite(pokemonIV > 90 ? Color.Yellow : Color.Cyan, $"We caught a {pokemonName} with {pokemonCP} CP and {pokemonIV}% IV !!");
+                    ColoredConsoleWrite(pokemonIV > ClientSettings.TransferIVThreshold ? Color.Yellow : Color.Cyan, $"We caught a {pokemonName} with {pokemonCP} CP and {pokemonIV}% IV !!");
                     foreach (int xp in caughtPokemonResponse.Scores.Xp)
                         TotalExperience += xp;
                     TotalPokemon += 1;
@@ -402,41 +396,45 @@ namespace PokemonGo.RocketAPI.Window
                 else
                     ColoredConsoleWrite(Color.Red, $"{pokemonName} with {pokemonCP} CP and {pokemonIV}% IV got away..");
 
-
-                // I believe a switch is more efficient and easier to read.
-                switch (ClientSettings.TransferType)
-                {
-                    case "Leave Strongest":
-                        await TransferAllButStrongestUnwantedPokemon(client);
-                        break;
-                    case "All":
-                        await TransferAllGivenPokemons(client, pokemons2);
-                        break;
-                    case "Duplicate":
-                        await TransferDuplicatePokemon(client);
-                        break;
-                    case "IV Duplicate":
-                        await TransferDuplicateIVPokemon(client);
-                        break;
-                    case "CP":
-                        await TransferAllWeakPokemon(client, ClientSettings.TransferCPThreshold);
-                        break;
-                    case "IV":
-                        await TransferAllGivenPokemons(client, pokemons2, ClientSettings.TransferIVThreshold);
-                        break;
-                    case "IV and CP":
-                        await TransferAllGivenPokemons(client, pokemons2, ClientSettings.TransferIVThreshold, ClientSettings.TransferCPThreshold, false, ClientSettings.KeepEvolveExpPokemon);
-                        break;
-                    case "IV xor CP":
-                        await TransferAllGivenPokemons(client, pokemons2, ClientSettings.TransferIVThreshold, ClientSettings.TransferCPThreshold, true, ClientSettings.KeepEvolveExpPokemon);
-                        break;
-                    default:
-                        ColoredConsoleWrite(Color.DarkGray, "Transfering pokemon disabled");
-                        break;
-                }
-
                 FarmingPokemons = false;
                 await Task.Delay(3000);
+            }
+
+            var inventory2 = await client.GetInventory();
+            var pokemons2 = inventory2.InventoryDelta.InventoryItems
+                .Select(i => i.InventoryItemData?.Pokemon)
+                .Where(p => p != null && p?.PokemonId > 0)
+                .ToArray();
+            // I believe a switch is more efficient and easier to read.
+            switch (ClientSettings.TransferType)
+            {
+                case "Leave Strongest":
+                    await TransferAllButStrongestUnwantedPokemon(client);
+                    break;
+                case "All":
+                    await TransferAllGivenPokemons(client, pokemons2);
+                    break;
+                case "Duplicate":
+                    await TransferDuplicatePokemon(client);
+                    break;
+                case "IV Duplicate":
+                    await TransferDuplicateIVPokemon(client);
+                    break;
+                case "CP":
+                    await TransferAllWeakPokemon(client, ClientSettings.TransferCPThreshold);
+                    break;
+                case "IV":
+                    await TransferAllGivenPokemons(client, pokemons2, ClientSettings.TransferIVThreshold);
+                    break;
+                case "IV and CP":
+                    await TransferAllGivenPokemons(client, pokemons2, ClientSettings.TransferIVThreshold, ClientSettings.TransferCPThreshold, false, ClientSettings.KeepEvolveExpPokemon);
+                    break;
+                case "IV xor CP":
+                    await TransferAllGivenPokemons(client, pokemons2, ClientSettings.TransferIVThreshold, ClientSettings.TransferCPThreshold, true, ClientSettings.KeepEvolveExpPokemon);
+                    break;
+                default:
+                    ColoredConsoleWrite(Color.DarkGray, "Transfering pokemon disabled");
+                    break;
             }
         }
 
