@@ -653,12 +653,10 @@ namespace PokemonGo.RocketAPI.Window
                 var pokemonIV = Perfect(pokemon);
                 var pokemonIDString = string.Format("Pokemon {0} with {1} CP and IV {2}%.", pokemon.PokemonId, pokemon.Cp, Math.Round(pokemonIV).ToString());
 
-                if (isXOR)
-                    // Transfer if neither of IV or CP criterion is met.
-                    if (pokemonIV >= keepPerfectPokemonLimit || pokemon.Cp >= cpThreshold) continue;
-                else
-                    // Transfer if both IV and CP criterion is not met.
-                    if (pokemonIV >= keepPerfectPokemonLimit && pokemon.Cp >= cpThreshold) continue;
+                // Do not transfer if both IV and CP criterion is met.
+                if (pokemonIV >= keepPerfectPokemonLimit && pokemon.Cp >= cpThreshold) continue;
+                // Do not transfer if either of IV or CP criterion is met and isXOR option.
+                if (isXOR && pokemonIV >= keepPerfectPokemonLimit || pokemon.Cp >= cpThreshold) continue;
 
                 if (pokemon.Favorite == 0)
                 {
