@@ -41,11 +41,12 @@ namespace PokemonGo.RocketAPI.Window
                         await client.DoPtcLogin(ClientSettings.PtcUsername, ClientSettings.PtcPassword);
                         break;
                     case AuthType.Google:
-                        await client.DoGoogleLogin();
+                        await client.DoGoogleLogin(ClientSettings.Email, ClientSettings.Password);
                         break;
                 }
                 //
                 await client.SetServer();
+                var profile = await client.GetProfile();
                 var inventory = await client.GetInventory();
                 var pokemons =
                     inventory.InventoryDelta.InventoryItems
@@ -62,7 +63,7 @@ namespace PokemonGo.RocketAPI.Window
 
                 var imageList = new ImageList { ImageSize = new Size(50, 50) };
                 listView1.ShowItemToolTips = true;
-
+                
                 foreach (var pokemon in pokemons)
                 {
                     Bitmap pokemonImage = null;
@@ -88,15 +89,14 @@ namespace PokemonGo.RocketAPI.Window
                     var pokemonId2 = pokemon.PokemonId;
                     var pokemonName = pokemon.Id;
 
-                    listViewItem.Text = string.Format("{0}\n{1} CP", pokemon.PokemonId, pokemon.Cp);
-                    listViewItem.ToolTipText = currentCandy + " Candy\n" + currIv + "% IV";
-
-
+                    listViewItem.Text = string.Format("{0}\n{1} CP ({2}% IV)", pokemon.PokemonId, pokemon.Cp, currIv);
+                    listViewItem.ToolTipText = string.Format("Candy: {0}\nStats: Attk {1} Def {2} Stam {3}", currentCandy, pokemon.IndividualAttack, pokemon.IndividualDefense, pokemon.IndividualStamina);
+                    
                     this.listView1.Items.Add(listViewItem);
-
-
+		    
                 }
-				EnabledButton(true);
+		this.Text = "PokeUi " + pokemons.Count<PokemonData>() + "/" + profile.Profile.PokeStorage;
+		EnabledButton(true);
 
 
 			}
