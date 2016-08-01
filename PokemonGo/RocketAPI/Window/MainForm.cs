@@ -547,9 +547,25 @@ namespace PokemonGo.RocketAPI.Window
                 double pokeStopDistance = currentPosition.GetDistanceTo(new GeoCoordinate(pokeStop.Latitude, pokeStop.Longitude));
                 var time = pokeStopDistance / ClientSettings.TravelSpeed;
 
+                while (ClientSettings.CatchPokemon && time > 5)
+                {
+                    var isHeadingNorth = pokeStop.Latitude < currentPosition.Latitude;
+                    var isHeadingEast = pokeStop.Longitude > currentPosition.Longitude;
+                    var latDiff = (pokeStop.Latitude - currentPosition.Latitude) / (time / 5);
+                    var longDiff = (pokeStop.Longitude - currentPosition.Longitude) / (time / 5);
+
+                    currentPosition.Latitude += latDiff;
+                    currentPosition.Longitude += longDiff;
+                    pokeStopDistance = currentPosition.GetDistanceTo(new GeoCoordinate(pokeStop.Latitude, pokeStop.Longitude));
+                    time = pokeStopDistance / ClientSettings.TravelSpeed;
+                    UpdateStatusDetails(Status.MovingToPokestop, string.Format("Pokestop: {0}\nDistance: {1}m Time: {2}s\nWaypoint Time: 5s", fortInfo.Name, Math.Round(pokeStopDistance), Math.Round(time, 1)));
+                    await locationManager.Move(currentPosition.Latitude, pokeStop.Longitude, 5000);
+                    await ExecuteCatchAllNearbyPokemons(client);
+                }
+
+                var fortSearch = await client.SearchFort(pokeStop.Id, pokeStop.Latitude, pokeStop.Longitude);
                 UpdateStatusDetails(Status.MovingToPokestop, string.Format("Pokestop: {0}\nDistance: {1}m Time: {2}s", fortInfo.Name, Math.Round(pokeStopDistance), Math.Round(time, 1)));
                 await locationManager.Move(pokeStop.Latitude, pokeStop.Longitude, time * 1000);
-                var fortSearch = await client.SearchFort(pokeStop.Id, pokeStop.Latitude, pokeStop.Longitude);
 
                 StringWriter PokeStopOutput = new StringWriter();
                 PokeStopOutput.Write($"");
