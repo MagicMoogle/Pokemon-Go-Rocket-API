@@ -33,5 +33,6 @@ namespace PokemonGo.RocketAPI
         double RazzBerrySetting { get; }
         bool CatchPokemon { get; }
         bool KeepEvolveExpPokemon { get; }
+        double TravelRadius { get; }
     }
 }

@@ -51,6 +51,7 @@
     <Reference Include="System" />
     <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Device" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -72,6 +73,12 @@
     <Compile Include="MainForm.Designer.cs">
       <DependentUpon>MainForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="MapBotForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="MapBotForm.Designer.cs">
+      <DependentUpon>MapBotForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="MapForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -84,6 +91,7 @@
     <Compile Include="PokemonForm.Designer.cs">
       <DependentUpon>PokemonForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="PokemonListViewArg.cs" />
     <Compile Include="PokeUi.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -99,8 +107,13 @@
     <Compile Include="SettingsForm.Designer.cs">
       <DependentUpon>SettingsForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="StatusEnum.cs" />
+    <Compile Include="StatusViewModel.cs" />
     <EmbeddedResource Include="MainForm.resx">
       <DependentUpon>MainForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="MapBotForm.resx">
+      <DependentUpon>MapBotForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="MapForm.resx">
       <DependentUpon>MapForm.cs</DependentUpon>
@@ -134,9 +147,15 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="App.config" />
+    <None Include="App.config">
+      <SubType>Designer</SubType>
+    </None>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\..\PokemonGo.Pokebot\PokemonGo.Pokebot.csproj">
+      <Project>{f7a5a229-e034-411d-8ff3-34eb6763b3ec}</Project>
+      <Name>PokemonGo.Pokebot</Name>
+    </ProjectReference>
     <ProjectReference Include="..\PokemonGo.RocketAPI.csproj">
       <Project>{05D2DA44-1B8E-4CF7-94ED-4D52451CD095}</Project>
       <Name>PokemonGo.RocketAPI</Name>

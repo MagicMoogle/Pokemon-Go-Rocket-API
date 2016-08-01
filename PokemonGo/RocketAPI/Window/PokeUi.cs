@@ -88,9 +88,24 @@ namespace PokemonGo.RocketAPI.Window
 
                     var pokemonId2 = pokemon.PokemonId;
                     var pokemonName = pokemon.Id;
+                    Font boldFont = new Font(listViewItem.Font, FontStyle.Bold);
 
-                    listViewItem.Text = string.Format("{0}\n{1} CP ({2}% IV)", pokemon.PokemonId, pokemon.Cp, currIv);
-                    listViewItem.ToolTipText = string.Format("Candy: {0}\nStats: Attk {1} Def {2} Stam {3}", currentCandy, pokemon.IndividualAttack, pokemon.IndividualDefense, pokemon.IndividualStamina);
+                    if (pokemon.Favorite != 0)
+                        listViewItem.BackColor = Color.LightYellow;
+
+                    if ((int)currIv == 100)
+                    {
+                        listViewItem.ForeColor = Color.DarkRed;
+                        listViewItem.Font = boldFont;
+                    }
+                    else if ((int)currIv > 90)
+                    {
+                        listViewItem.ForeColor = Color.DarkOrange;
+                    }
+
+
+                    listViewItem.Text = string.Format("{0}\n{1} CP ({2}%)", pokemon.PokemonId, pokemon.Cp, currIv.ToString());
+                    listViewItem.ToolTipText = string.Format("Candy: {0}\nStats: {1}A {2}D {3}S", currentCandy, pokemon.IndividualAttack, pokemon.IndividualDefense, pokemon.IndividualStamina);
                     
                     this.listView1.Items.Add(listViewItem);
 		    
@@ -178,6 +193,7 @@ namespace PokemonGo.RocketAPI.Window
             foreach (ListViewItem selectedItem in selectedItems)
             {
                 await evolvePokemon((PokemonData)selectedItem.Tag);
+                await Task.Delay(1000);
             }
 
             this.listView1.Clear();
@@ -204,8 +220,8 @@ namespace PokemonGo.RocketAPI.Window
                 var evolvePokemonResponse = await client.EvolvePokemon(pokemon.Id);
                 string message = "";
                 string caption = "";
-                MessageBoxButtons buttons = MessageBoxButtons.OK;
-                DialogResult result;
+                //MessageBoxButtons buttons = MessageBoxButtons.OK;
+                //DialogResult result;
 
                 if (evolvePokemonResponse.Result == 1)
                 {
@@ -218,7 +234,7 @@ namespace PokemonGo.RocketAPI.Window
                     caption = $"Evolve {pokemon.PokemonId} failed";
                 }
 
-                result = MessageBox.Show(message, caption, buttons, MessageBoxIcon.Information);
+                //result = MessageBox.Show(message, caption, buttons, MessageBoxIcon.Information);
             }
             catch (TaskCanceledException) { await evolvePokemon(pokemon); }
             catch (UriFormatException) { await evolvePokemon(pokemon); }
@@ -251,11 +267,11 @@ namespace PokemonGo.RocketAPI.Window
 
                 result = MessageBox.Show(message, caption, buttons, MessageBoxIcon.Information);
             }
-            catch (TaskCanceledException) { await transferPokemon(pokemon); }
-            catch (UriFormatException) { await transferPokemon(pokemon); }
-            catch (ArgumentOutOfRangeException) { await transferPokemon(pokemon); }
-            catch (ArgumentNullException) { await transferPokemon(pokemon); }
-            catch (NullReferenceException) { await transferPokemon(pokemon); }
+            catch (TaskCanceledException ex) { await transferPokemon(pokemon); }
+            catch (UriFormatException ex) { await transferPokemon(pokemon); }
+            catch (ArgumentOutOfRangeException ex) { await transferPokemon(pokemon); }
+            catch (ArgumentNullException ex) { await transferPokemon(pokemon); }
+            catch (NullReferenceException ex) { await transferPokemon(pokemon); }
             catch (Exception ex) { await transferPokemon(pokemon); }
         }
 

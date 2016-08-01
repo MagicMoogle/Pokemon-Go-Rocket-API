@@ -30,6 +30,12 @@ namespace PokemonGo.RocketAPI.Window
             await client.UpdatePlayerLocation(lat, lng);
         }
 
+        public async Task Move(double lat, double lng, double time)
+        {
+            await Task.Delay((int)Math.Ceiling(time));
+            await client.UpdatePlayerLocation(lat, lng);
+        }
+
         public struct Coordinate
         {
 

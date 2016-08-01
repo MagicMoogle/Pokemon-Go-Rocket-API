@@ -38,6 +38,8 @@ namespace PokemonGo.RocketAPI
         private double _currentLng;
         private Request.Types.UnknownAuth _unknownAuth;
         public static string AccessToken { get; set; } = string.Empty;
+        private Object lockThis = new Object();
+        private DateTime _getMapObjectsLastCalled;
 
         public Client(ISettings settings)
         {
@@ -297,6 +299,11 @@ namespace PokemonGo.RocketAPI
                             Guid = ByteString.CopyFromUtf8("4a2e9bc330dae60e7b74fc85b98868ab4700802e")
                         }.ToByteString()
                 });
+
+            var elapsed = DateTime.Now.Subtract(_getMapObjectsLastCalled).TotalMilliseconds;
+            if (elapsed < 5000)
+                await Task.Delay((int)(5000 - elapsed));
+            _getMapObjectsLastCalled = DateTime.Now;
 
             return
                 await _httpClient.PostProtoPayload<Request, GetMapObjectsResponse>($"https://{_apiUrl}/rpc", mapRequest);
