@@ -301,8 +301,8 @@ namespace PokemonGo.RocketAPI
                 });
 
             var elapsed = DateTime.Now.Subtract(_getMapObjectsLastCalled).TotalMilliseconds;
-            if (elapsed < 5000)
-                await Task.Delay((int)(5000 - elapsed));
+            if (elapsed < 5500)
+                await Task.Delay((int)(5500 - elapsed));
             _getMapObjectsLastCalled = DateTime.Now;
 
             return
