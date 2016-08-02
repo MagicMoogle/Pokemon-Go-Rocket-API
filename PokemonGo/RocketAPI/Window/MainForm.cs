@@ -432,53 +432,62 @@ namespace PokemonGo.RocketAPI.Window
 
                 FarmingPokemons = true;
 
-                await locationManager.update(pokemon.Latitude, pokemon.Longitude);
+                var currentPosition = new GeoCoordinate(client.getCurrentLat(), client.getCurrentLong());
+                var distance = currentPosition.GetDistanceTo(new GeoCoordinate(pokemon.Latitude, pokemon.Longitude));
+                var time = distance / ClientSettings.TravelSpeed;
+                UpdateStatusDetails(Status.MovingToPokemon, string.Format("Distance: {0}m Time: {1}s", Math.Round(distance), Math.Round(time, 1)));
+                await locationManager.Move(pokemon.Latitude, pokemon.Longitude, time * 1000);
                 var encounterPokemonResponse = await client.EncounterPokemon(pokemon.EncounterId, pokemon.SpawnpointId);
-                var pokemondata = encounterPokemonResponse.WildPokemon.PokemonData;
-                var pokemonCP = encounterPokemonResponse?.WildPokemon?.PokemonData?.Cp;
-                var pokemonIV = (int)Math.Round(Perfect(encounterPokemonResponse?.WildPokemon?.PokemonData));
-                CatchPokemonResponse caughtPokemonResponse;
-
                 current++;
-                do
+                if (encounterPokemonResponse.Status == EncounterResponse.Types.Status.EncounterSuccess)
                 {
-                    var probability = encounterPokemonResponse.CaptureProbability.CaptureProbability_.First();
-                    if (ClientSettings.RazzBerryMode == "cp")
-                        if (pokemonCP > ClientSettings.RazzBerrySetting)
-                            await client.UseRazzBerry(client, pokemon.EncounterId, pokemon.SpawnpointId);
-                    if (ClientSettings.RazzBerryMode == "probability")
-                        if (probability < ClientSettings.RazzBerrySetting)
-                            await client.UseRazzBerry(client, pokemon.EncounterId, pokemon.SpawnpointId);
-                    UpdateStatusDetails(
-                        Status.CatchingPokemon, 
-                        string.Format("Catching pokemon {7}/{8} - {6}% chance\n{0} CP {1} Att {2} Def {3} Stm {4} IV {5}", pokemon.PokemonId, pokemondata.Cp, pokemondata.IndividualAttack, pokemondata.IndividualDefense, pokemondata.IndividualDefense, pokemonIV, Math.Round(probability * 100), current, numberOfPokemon));
-                    caughtPokemonResponse = await client.CatchPokemon(pokemon.EncounterId, pokemon.SpawnpointId, pokemon.Latitude, pokemon.Longitude, MiscEnums.Item.ITEM_POKE_BALL, pokemonCP); ; //note: reverted from settings because this should not be part of settings but part of logic
-                } while (caughtPokemonResponse.Status == CatchPokemonResponse.Types.CatchStatus.CatchMissed || caughtPokemonResponse.Status == CatchPokemonResponse.Types.CatchStatus.CatchEscape);
+                    var pokemondata = encounterPokemonResponse.WildPokemon.PokemonData;
+                    var pokemonCP = encounterPokemonResponse?.WildPokemon?.PokemonData?.Cp;
+                    var pokemonIV = (int)Math.Round(Perfect(encounterPokemonResponse?.WildPokemon?.PokemonData));
+                    CatchPokemonResponse caughtPokemonResponse;
 
-                string pokemonName;
-                if (ClientSettings.Language == "german")
-                {
-                    string name_english = Convert.ToString(pokemon.PokemonId);
-                    var request = (HttpWebRequest)WebRequest.Create("http://boosting-service.de/pokemon/index.php?pokeName=" + name_english);
-                    var response = (HttpWebResponse)request.GetResponse();
-                    pokemonName = new StreamReader(response.GetResponseStream()).ReadToEnd();
+                    do
+                    {
+                        var probability = encounterPokemonResponse.CaptureProbability.CaptureProbability_.First();
+                        if (ClientSettings.RazzBerryMode == "cp")
+                            if (pokemonCP > ClientSettings.RazzBerrySetting)
+                                await client.UseRazzBerry(client, pokemon.EncounterId, pokemon.SpawnpointId);
+                        if (ClientSettings.RazzBerryMode == "probability")
+                            if (probability < ClientSettings.RazzBerrySetting)
+                                await client.UseRazzBerry(client, pokemon.EncounterId, pokemon.SpawnpointId);
+                        UpdateStatusDetails(
+                            Status.CatchingPokemon,
+                            string.Format("Catching pokemon {7}/{8} - {6}% chance\n{0} CP {1} Att {2} Def {3} Stm {4} IV {5}", pokemon.PokemonId, pokemondata.Cp, pokemondata.IndividualAttack, pokemondata.IndividualDefense, pokemondata.IndividualDefense, pokemonIV, Math.Round(probability * 100), current, numberOfPokemon));
+                        caughtPokemonResponse = await client.CatchPokemon(pokemon.EncounterId, pokemon.SpawnpointId, pokemon.Latitude, pokemon.Longitude, MiscEnums.Item.ITEM_POKE_BALL, pokemonCP); ; //note: reverted from settings because this should not be part of settings but part of logic
+                    } while (caughtPokemonResponse.Status == CatchPokemonResponse.Types.CatchStatus.CatchMissed || caughtPokemonResponse.Status == CatchPokemonResponse.Types.CatchStatus.CatchEscape);
+
+                    string pokemonName;
+                    if (ClientSettings.Language == "german")
+                    {
+                        string name_english = Convert.ToString(pokemon.PokemonId);
+                        var request = (HttpWebRequest)WebRequest.Create("http://boosting-service.de/pokemon/index.php?pokeName=" + name_english);
+                        var response = (HttpWebResponse)request.GetResponse();
+                        pokemonName = new StreamReader(response.GetResponseStream()).ReadToEnd();
+                    }
+                    else
+                        pokemonName = Convert.ToString(pokemon.PokemonId);
+
+                    if (caughtPokemonResponse.Status == CatchPokemonResponse.Types.CatchStatus.CatchSuccess)
+                    {
+                        ColoredConsoleWrite(pokemonIV >= ClientSettings.TransferIVThreshold ? Color.Yellow : Color.Cyan, $"We caught a {pokemonName} with {pokemonCP} CP and {pokemonIV}% IV !!");
+                        foreach (int xp in caughtPokemonResponse.Scores.Xp)
+                            TotalExperience += xp;
+                        TotalPokemon += 1;
+                        this.PokemonCaught(this, new PokemonListViewArg(pokemondata.Id, pokemondata.PokemonId.ToString(), pokemondata.Cp, pokemondata.IndividualAttack, pokemondata.IndividualDefense, pokemondata.IndividualStamina, pokemonIV));
+                    }
+                    else
+                        ColoredConsoleWrite(Color.Red, $"{pokemonName} with {pokemonCP} CP and {pokemonIV}% IV got away..");
+
+                    await Task.Delay(3000);
                 }
                 else
-                    pokemonName = Convert.ToString(pokemon.PokemonId);
-
-                if (caughtPokemonResponse.Status == CatchPokemonResponse.Types.CatchStatus.CatchSuccess)
-                {
-                    ColoredConsoleWrite(pokemonIV >= ClientSettings.TransferIVThreshold ? Color.Yellow : Color.Cyan, $"We caught a {pokemonName} with {pokemonCP} CP and {pokemonIV}% IV !!");
-                    foreach (int xp in caughtPokemonResponse.Scores.Xp)
-                        TotalExperience += xp;
-                    TotalPokemon += 1;
-                    this.PokemonCaught(this, new PokemonListViewArg(pokemondata.Id, pokemondata.PokemonId.ToString(), pokemondata.Cp, pokemondata.IndividualAttack, pokemondata.IndividualDefense, pokemondata.IndividualStamina, pokemonIV));
-                }
-                else
-                    ColoredConsoleWrite(Color.Red, $"{pokemonName} with {pokemonCP} CP and {pokemonIV}% IV got away..");
-
+                    ColoredConsoleWrite(Color.Red, string.Format("Error occurred: {0}.\nIf this keeps happening try force unban.", encounterPokemonResponse.Status));
                 FarmingPokemons = false;
-                await Task.Delay(3000);
             }
 
             var inventory2 = await client.GetInventory();
@@ -557,7 +566,7 @@ namespace PokemonGo.RocketAPI.Window
                     currentPosition.Longitude += longDiff;
                     pokeStopDistance = currentPosition.GetDistanceTo(new GeoCoordinate(pokeStop.Latitude, pokeStop.Longitude));
                     time = pokeStopDistance / ClientSettings.TravelSpeed;
-                    UpdateStatusDetails(Status.MovingToPokestop, string.Format("Pokestop: {0}\nDistance: {1}m Time: {2}s\nWaypoint Time: 5s", fortInfo.Name, Math.Round(pokeStopDistance), Math.Round(time, 1)));
+                    UpdateStatusDetails(Status.MovingToPokestop, string.Format("Waypoint Time: 5s", Math.Round(time, 1)));
                     await locationManager.Move(currentPosition.Latitude, pokeStop.Longitude, 5000);
                     await ExecuteCatchAllNearbyPokemons(client);
                 }
